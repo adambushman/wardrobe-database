@@ -854,7 +854,7 @@ CREATE VIEW vAllItemColors AS
 DROP VIEW IF EXISTS vAllFitColors;
 
 CREATE VIEW vAllFitColors AS 
-	SELECT ic.hexCode, ic.commonName, SUM(ic.colorShare) AS 'totalShare'
+	SELECT DATE_FORMAT(wf.fitDateTime, '%Y-%m-%d') AS fitDate, ic.hexCode, ic.commonName, SUM(ic.colorShare) AS 'totalShare'
 
 	FROM wFitItems wfi
 	LEFT JOIN (
@@ -863,8 +863,9 @@ CREATE VIEW vAllFitColors AS
 		JOIN wItem wi ON wi.itemID = wic.itemID
 		JOIN wColor wc ON wc.hexCode = wic.hexCode
 		) ic ON ic.itemID = wfi.itemID
+	LEFT JOIN wFit wf ON wf.fitID = wfi.fitID
 		
-	GROUP BY ic.hexCode, ic.commonName
+	GROUP BY wf.fitDateTime, ic.hexCode, ic.commonName
 	ORDER BY ic.commonName, ic.hexCode;
 
 SHOW TABLES;
