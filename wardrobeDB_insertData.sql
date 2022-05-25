@@ -60,7 +60,7 @@ CALL addKeyWord('casual');
 CALL addKeyWord('comfy');
 CALL addKeyWord('t-shirt');
 
--- Step 14: Add Multiple Patterns for the Item (if not already present in DB)
+-- Step 14: Add Multiple KeyWords for the Item (if not already present in DB)
 CALL addItemKeyWord(205, 'casual');
 CALL addItemKeyWord(205, 'comfy');
 CALL addItemKeyWord(205, 't-shirt');
