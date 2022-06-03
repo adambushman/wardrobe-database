@@ -1,3 +1,5 @@
+![Banner Image for Wardrobe Database](./header_wardrobe-database.jpg)
+
 # Wardrobe Database
 
 A MySQL database of wardrobe items and daily outfit selections
