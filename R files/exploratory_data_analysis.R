@@ -44,6 +44,13 @@ ggplot(data = clothing %>% count(Type),
   )
 
 
+# Ratios
+# ------
+topsToBottoms = nrow(clothing %>% filter(Type == 'Shirts')) / nrow(clothing %>% filter(Type %in% c('Shorts', 'Pants')))
+print(paste('Tops to Bottoms: ', round(topsToBottoms, 1), ':1', sep = ''))
+
+
+
 # Clothing Keywords
 # -----------------
 kwData = 
