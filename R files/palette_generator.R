@@ -29,15 +29,19 @@ printFitPal = function(dateStart = NULL, dateEnd = NULL) {
   res = dbSendQuery(mydb, "SELECT * FROM vAllFitColors")
   data = dbFetch(res, n=-1)
   
-  i = ifelse(is.null(dateStart) || is.null(dateEnd), interval(date(min(data$fitDate)), date(max(data$fitDate))), interval(date(dateStart), date(dateEnd)))
+  if(is.null(dateStart) || is.null(dateEnd)) {
+    i = interval(date(min(data$fitDate)), date(max(data$fitDate)))
+  } else {
+    i = interval(date(dateStart), date(dateEnd))
+  }
 
-  data.colors = dbFetch(res, n=-1) %>%
+  data.colors = data %>%
     data.frame(.) %>% 
     mutate(fitDate = date(fitDate)) %>%
-    filter(date(fitDate) %within% i) %>%
+    filter(fitDate %within% i) %>%
     group_by(hexCode, commonName) %>%
     summarise(totalShare = sum(totalShare), .groups = 'drop')
-  
+
   dbDisconnect(mydb)
   printPal(data.colors, 'Fit')
 }
@@ -51,7 +55,6 @@ printPal = function(colorTbl, type) {
     arrange(commonName)
   
   par(bg = "#e8e8e4")
-  par(mfrow = c(1,1))
   plot(NULL
        , main = paste(type, "Color Palette")
        , xlim = c(1,50)
@@ -93,9 +96,8 @@ printPal = function(colorTbl, type) {
       Y = Y - 1
     }
   }
-  par(mfrow = c(1,1))
 }
 
-
+par(mfrow = c(2, 1))
 printItemPal()
 printFitPal()
