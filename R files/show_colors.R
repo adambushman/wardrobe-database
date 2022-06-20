@@ -24,6 +24,6 @@ print.palette <- function(x, ...) {
   #text((n + 1) / 2, 1, labels = attr(x, "name"), cex = 2.5, family = "serif")
 }
 
-cols = c(unname(data.colors %>% filter(commonName %in% c('Brown')) %>% select(hexCode))[[1]])
-cols[4:5]
+cols = c(unname(data.colors %>% filter(commonName %in% c('White')) %>% select(hexCode))[[1]])
 print.palette(cols)
+cols[1]
