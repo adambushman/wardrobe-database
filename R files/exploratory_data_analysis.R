@@ -69,3 +69,32 @@ set.seed(14) # for reproducibility
 wordcloud(words = kwData$keyword, freq = kwData$freq, 
           min.freq = 1, random.order=FALSE, 
           rot.per=0.35, colors=brewer.pal(8, "Dark2"))
+
+
+
+# Frequencies
+# -----------
+mydb = dbConnect(MySQL()
+                 , user='AdamB'
+                 , password='clt@42jSKNdXKzoHsV3Y'
+                 , dbname='wardrobeDB'
+                 , host='localhost')
+
+res = dbSendQuery(mydb, "SELECT wItem.itemID, wFit.fitID
+FROM wFitItems
+INNER JOIN wFit ON wFit.fitID = wFitItems.fitId
+INNER JOIN wItem ON wItem.itemID = wFitItems.itemId
+WHERE wItem.active = TRUE;")
+fits = dbFetch(res, n=-1)
+
+dbDisconnect(mydb)
+
+
+ggplot(fits %>% count(itemID), 
+       aes(x = n)) +
+  geom_histogram(bins = 10, fill = "#bbb5bd", color = "#020202") +
+  theme_minimal()
+
+
+fits %>% count(itemID) %>% arrange(desc(n)) %>% head(10)
+
