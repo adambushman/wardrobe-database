@@ -4,100 +4,126 @@ library(dplyr)
 library(lubridate)
 
 
-printItemPal = function() {
-  mydb = dbConnect(MySQL()
-                   , user='AdamB'
-                   , password='clt@42jSKNdXKzoHsV3Y'
-                   , dbname='wardrobeDB'
-                   , host='localhost')
-  
-  res = dbSendQuery(mydb, "SELECT * FROM vAllItemColors")
-  data.colors = dbFetch(res, n=-1) %>%
-    data.frame(.)
-  
-  dbDisconnect(mydb)
-  printPal(data.colors, 'Wardrobe')
-}
+###
+# Get Color Data
+###
 
-printFitPal = function(dateStart = NULL, dateEnd = NULL) {
+get_colors <- function(type = c("items", "fits"), dateRange = NULL) {
   mydb = dbConnect(MySQL()
                    , user='AdamB'
                    , password='clt@42jSKNdXKzoHsV3Y'
                    , dbname='wardrobeDB'
                    , host='localhost')
   
-  res = dbSendQuery(mydb, "SELECT * FROM vAllFitColors")
-  data = dbFetch(res, n=-1)
-  
-  if(is.null(dateStart) || is.null(dateEnd)) {
-    i = interval(date(min(data$fitDate)), date(max(data$fitDate)))
-  } else {
-    i = interval(date(dateStart), date(dateEnd))
+  if(type == "items") {
+    res <- dbSendQuery(mydb, "SELECT * FROM vAllItemColors")
   }
-
-  data.colors = data %>%
-    data.frame(.) %>% 
-    mutate(fitDate = date(fitDate)) %>%
-    filter(fitDate %within% i) %>%
+  else {
+    res <- dbSendQuery(mydb, "SELECT * FROM vAllFitColors")
+  }
+  
+  raw <- dbFetch(res, n=-1) %>% data.frame(.)
+  
+  dbClearResult(res)
+  dbDisconnect(mydb)
+  
+  if(type == "fits") {
+    if(is.null(dateRange)) {
+      today = ymd(Sys.Date())
+      dateRange = c(today - 90, today)
+    }
+    dateRange = ymd(dateRange)
+    if(dateRange[1] > dateRange[2]) {
+      dateRange = rev(dateRange)
+    }
+    raw <-
+      raw %>%
+      mutate(fitDate = ymd(fitDate)) %>%
+      filter(fitDate %within% interval(dateRange[1], dateRange[2]))
+  }
+    
+  raw  %>% 
     group_by(hexCode, commonName) %>%
     summarise(totalShare = sum(totalShare), .groups = 'drop')
-
-  dbDisconnect(mydb)
-  printPal(data.colors, 'Fit')
 }
 
-printPal = function(colorTbl, type) {
-  data.colors = colorTbl %>%
-    mutate(
-      share = totalShare / sum(totalShare),
-      portion = round(share * (50^2), 0)
-    ) %>%
-    arrange(commonName)
-  
-  par(bg = "#e8e8e4")
-  plot(NULL
-       , main = paste(type, "Color Palette")
-       , xlim = c(1,50)
-       , ylim = c(1,50)
-       , xlab = ""
-       , ylab = ""
-       , xaxt = "n"
-       , yaxt = "n")
-  
-  colorPlot = function(hex, xPos, yPos) {
-    rect(xPos[1]
-         , yPos[1]
-         , xPos[2]
-         , yPos[2]
-         , col = hex
-         , border = NA)
-  }
-  
-  for(i in 1:nrow(data.colors)) {
-    #Setup coordinates
-    if(i == 1) {
-      Y = c(49,50)
-      X = c(0,1)
-    }
-    
-    #Get a color and find out how much area
-    color = data.colors$hexCode[i]
-    squares = data.colors$portion[i]
-    
-    #Loop for to plot color units for appropriate amount of area
-    for(j in 1:squares) {
-      if(Y[1] < 0) {
-        Y = Y + 50
-        X = X + 1
-      }
-      
-      #Plot the color unit
-      colorPlot(color, X, Y)
-      Y = Y - 1
-    }
-  }
-}
 
-par(mfrow = c(2, 1))
-printItemPal()
-printFitPal()
+colors.all <- 
+  get_colors("items") %>%
+  mutate(
+    type = "Wardrobe Items"
+  ) %>%
+  select(type, hexCode, commonName, totalShare) %>%
+  rbind(
+    get_colors("fits") %>%
+      mutate(
+        type = "Outfit Items"
+      ) %>%
+      select(type, hexCode, commonName, totalShare)
+  )
+
+
+###
+# Print Palette Function
+###
+
+
+p.data <- 
+  colors.all %>%
+  group_by(type, commonName, hexCode) %>%
+  summarise(share = sum(totalShare), .groups = 'drop') %>%
+  group_by(type, commonName) %>%
+  mutate(
+    id = paste(type, commonName), 
+    ymax = cumsum(share), 
+    ymin = ymax - share
+  ) %>%
+  inner_join(
+    colors.all %>%
+      group_by(type, commonName) %>%
+      summarise(share = sum(totalShare), .groups = 'drop') %>%
+      group_by(type) %>%
+      mutate(
+        id = paste(type, commonName), 
+        xmax = cumsum(share), 
+        xmin = xmax - share
+      ), 
+    by = c("id" = "id")
+  ) %>%
+  group_by(type.x) %>%
+  mutate(
+    xmax_s = xmax / max(xmax, xmin), 
+    xmin_s = xmin / max(xmax, xmin)
+  ) %>%
+  group_by(type.x, commonName.x) %>%
+  mutate(
+    ymax_s = ymax / max(ymax, ymin), 
+    ymin_s = ymin / max(ymax, ymin)
+  ) %>%
+  select(type.x, commonName.x, hexCode, xmax_s, xmin_s, ymax_s, ymin_s)
+
+ 
+
+ggplot(p.data, aes(xmin = xmin_s, xmax = xmax_s, ymin = ymin_s, ymax = ymax_s, 
+             fill = hexCode)) +
+  geom_rect(show.legend = FALSE, fill = p.data$hexCode) +
+  facet_wrap(~type.x, nrow = 2, ncol = 1) + 
+  labs(
+    title = "Wardrobe Color Comparison", 
+    subtitle = "Wardrobe Items (Actives) vs Outfit Items (Worn in Past 3 Months)"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", color = "#53c3ce"), 
+    plot.subtitle = element_text(hjust = 0.5, face = "italic", color = "#333333"), 
+    plot.background = element_rect(fill = "#f1f7f4"), 
+    
+    panel.background = element_rect(fill = "#f1f7f4"), 
+    panel.grid = element_blank(), 
+    
+    strip.background = element_rect(fill = "#53c3ce"), 
+    strip.text = element_text(face = "bold", color = "#333333"), 
+    
+    axis.title = element_blank(), 
+    axis.text = element_blank(), 
+    axis.ticks = element_blank()
+  )
