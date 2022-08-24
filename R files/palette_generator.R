@@ -120,7 +120,7 @@ ggplot(p.data, aes(xmin = xmin_s, xmax = xmax_s, ymin = ymin_s, ymax = ymax_s,
     panel.background = element_rect(fill = "#f1f7f4"), 
     panel.grid = element_blank(), 
     
-    strip.background = element_rect(fill = "#53c3ce"), 
+    strip.background = element_rect(color = "#333333", fill = NA), 
     strip.text = element_text(face = "bold", color = "#333333"), 
     
     axis.title = element_blank(), 
