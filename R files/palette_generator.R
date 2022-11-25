@@ -1,7 +1,7 @@
 #install.packages("RMySQL")
-library(RMySQL)
+library('RMySQL')
 library('tidyverse')
-library(lubridate)
+library('lubridate')
 
 
 ###
@@ -51,13 +51,13 @@ get_colors <- function(type = c("items", "fits"), dateRange = NULL) {
 colors.all <- 
   get_colors("items") %>%
   mutate(
-    type = "Wardrobe Items"
+    type = "What I Own"
   ) %>%
   select(type, hexCode, commonName, totalShare) %>%
   rbind(
     get_colors("fits") %>%
       mutate(
-        type = "Outfit Items"
+        type = "What I Wear"
       ) %>%
       select(type, hexCode, commonName, totalShare)
   )
@@ -110,7 +110,7 @@ ggplot(p.data, aes(xmin = xmin_s, xmax = xmax_s, ymin = ymin_s, ymax = ymax_s,
   facet_wrap(~type.x, nrow = 2, ncol = 1) + 
   labs(
     title = "Wardrobe Color Comparison", 
-    subtitle = "Wardrobe Items (Actives) vs Outfit Items (Worn in Past 3 Months)"
+    subtitle = "Past 3 Months Outfits vs Active Wardrobe Items"
   ) +
   theme(
     plot.title = element_text(hjust = 0.5, face = "bold", color = "#53c3ce"), 
