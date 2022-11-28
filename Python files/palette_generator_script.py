@@ -2,10 +2,6 @@ import pandas as pd
 import numpy as np
 import mysql.connector
 
-cdf_i = (
-    pd.read_csv('C:/Users/Adam Bushman/Documents/colors.csv')
-    .sort_values(['type', 'commonName', 'totalShare'], ascending = [True, True, False])
-)
 
 # Get the data
 def execute(query):
@@ -30,6 +26,7 @@ def execute(query):
 
 
 # Transformation script
+# ---------------------
 cdf = (
     execute("SELECT * FROM vAllItemColors")
     .groupby(['hexCode', 'commonName'])
@@ -50,6 +47,7 @@ cdf = (
         ), 
         ignore_index = True
     )
+    .assign(totalShare = lambda a_df: a_df['totalShare'].astype(float))
     .sort_values(['type', 'commonName', 'totalShare'], ascending = [True, True, False])
 )
 
@@ -84,5 +82,5 @@ cdf = (
         ymin_s  = lambda b_df: (b_df['ymin'] / b_df.groupby(['type', 'commonName'])['ymax', 'ymin'].transform(np.max).max(axis=1))
     )
     .loc[:, ['type', 'commonName', 'hexCode', 'xmax_s', 'xmin_s', 'ymax_s', 'ymin_s']]
-    #.to_csv('C:/Users/Adam Bushman/Documents/colors_trans.csv')
+    .to_csv('C:/Users/Adam Bushman/Documents/colors_trans.csv')
 )
