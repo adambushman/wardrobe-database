@@ -34,7 +34,7 @@ execute <- function(query) {
 
 fit <- 
   execute(
-    "SELECT f.fitDate, i.typeName, o.occasionName, hexCode
+    "SELECT f.fitDate, i.typeName, o.occasionName, f.hexCode, w.words
     FROM (
     	SELECT
     		fi.fitID, fi.itemID, 
@@ -54,9 +54,18 @@ fit <-
         FROM wFit f
         LEFT JOIN wFitOccasion fo ON fo.occasionID = f.occasionID
     ) o ON o.fitID = f.fitID
-    WHERE f.fitID = 250;"
+    LEFT JOIN (
+    	SELECT ik.itemID, GROUP_CONCAT(' ', k.word) AS words
+    	FROM wItemKeywords ik
+    	LEFT JOIN wKeyword k ON k.wordID = ik.wordID
+    	LEFT JOIN wItem i ON i.itemID = ik.itemID
+    	GROUP BY ik.itemID
+    ) w ON w.itemID = f.itemID
+    WHERE f.fitID = 339;"
   ) %>%
   mutate(
+    xlab = 0.5, 
+    words = stringr::str_wrap(words, 12), 
     typeName = factor(typeName, levels = rev(c(
       "Hats", "Jackets", "Sweaters", "Sweatshirts", "Blazer", "Suits", "Dresses", 
       "Shirts", "Ties", "Belts", "Pants", "Shorts", "Skirts", "Shoes"
@@ -66,11 +75,16 @@ fit <-
 
 ggplot(
   fit, 
-  aes(x = typeName)
+  aes(x = typeName, label = words)
 ) +
   geom_dotplot(
     fill = fit$hexCode, 
     dotsize = 8
+  ) +
+  geom_text(
+    aes(x = typeName, y = xlab), 
+    hjust = 1, 
+    size = 3
   ) +
   coord_flip() +
   ylim(0, 0.5) +
@@ -88,5 +102,6 @@ ggplot(
     plot.title = element_text(hjust = 0.5, face = "bold", size = 16), 
     plot.subtitle = element_text(hjust = 0.5, face = "italic", size = 10),
     axis.text.x = element_blank(), 
+    axis.text.y = element_text(size = 10), 
     axis.title = element_blank()
   )
