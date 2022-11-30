@@ -33,20 +33,35 @@ execute <- function(query) {
 # Get Data
 
 fit <- 
-  execute("SELECT typeName, hexCode
-FROM wFitItems fi
-LEFT JOIN wItemColors c
-	ON c.itemId = fi.itemId
-LEFT JOIN (
-	SELECT * FROM wItem i LEFT JOIN wItemType it ON i.itemTypeId = it.typeId
-	) im ON im.itemId = fi.itemId
-WHERE fi.fitId = (SELECT MAX(fitID) - 25 FROM wFit)
-GROUP BY typeName, hexCode;") %>%
+  execute(
+    "SELECT f.fitDate, i.typeName, o.occasionName, hexCode
+    FROM (
+    	SELECT
+    		fi.fitID, fi.itemID, 
+    		DATE_FORMAT(f.fitDateTime, '%M %e, %Y') AS fitDate, 
+            f.occasionID, ic.hexCode
+        FROM wFitItems fi
+        LEFT JOIN wFit f ON f.fitID = fi.fitID
+        LEFT JOIN wItemColors ic ON ic.itemID = fi.itemID
+    ) f
+    LEFT JOIN (
+    	SELECT itemID, typeName
+        FROM wItemType it
+        LEFT JOIN wItem i ON i.itemTypeId = it.typeID
+    ) i ON i.itemID = f.itemID
+    LEFT JOIN (
+    	SELECT f.fitID, fo.occasionName
+        FROM wFit f
+        LEFT JOIN wFitOccasion fo ON fo.occasionID = f.occasionID
+    ) o ON o.fitID = f.fitID
+    WHERE f.fitID = 250;"
+  ) %>%
   mutate(
     typeName = factor(typeName, levels = rev(c(
       "Hats", "Jackets", "Sweaters", "Sweatshirts", "Blazer", "Suits", "Dresses", 
       "Shirts", "Ties", "Belts", "Pants", "Shorts", "Skirts", "Shoes"
-    ))))
+    )))) %>%
+  arrange(typeName)
 
 
 ggplot(
@@ -60,12 +75,18 @@ ggplot(
   coord_flip() +
   ylim(0, 0.5) +
   labs(
-    title = "Fit ID Something"
+    title = "Fit Palette", 
+    subtitle = paste(
+      fit$fitDate[1], 
+      fit$occasionName[1], 
+      sep = " | "
+    )
   ) +
   theme_minimal() +
   theme(
     plot.background = element_rect(fill = "#D7DEDC", color = NA), 
     plot.title = element_text(hjust = 0.5, face = "bold", size = 16), 
+    plot.subtitle = element_text(hjust = 0.5, face = "italic", size = 10),
     axis.text.x = element_blank(), 
     axis.title = element_blank()
   )
